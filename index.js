@@ -23,7 +23,7 @@ const { logId } = configs
 fs.appendFile('logs.txt', `\nCreating log ${logId} at ${date.toString()}\n====================================================`, () => {})
 
 const waitForElementToExist = async (element) => {
-    await element.waitForExist({ timeout : 5000 })
+    await element.waitForExist({ timeout : 2000 })
 }
 
 const openMoreOptions = async () => {
@@ -65,42 +65,57 @@ const getTextField = async () => {
     return textField
 }
 
-const selectFirstContactIfItExists = async (value) => {
-    const listView = await client.$$('android.widget.ListView')
-    if(listView && listView[0]) {
-        await waitForElementToExist(listView[0])
-        const firstContact = listView[0].$$('android.widget.RelativeLayout')
-        if(firstContact && firstContact[0]) {
-            await waitForElementToExist(firstContact[0])
-            await firstContact[0].click()
-        } else {
-            await clearTextFieldValueAndLog(value)
+const clearTextFieldValueAndLog = async (message) => {
+    await clickOnButtonWithContentDesc('Clear query')
+    fs.appendFile('logs.txt', message + '\n', () => {})
+}
+
+const selectFirstContactIfItExists = async (value, operation) => {
+    let message
+    const listView = await client.$('android.widget.ListView')
+    try {
+        await waitForElementToExist(listView)
+        const firstContact = await listView.$('android.widget.RelativeLayout')
+        if(['add', 'remove'].includes(operation)) {
+            const selected = await firstContact.$('~Selected')
+            if(!selected.error && operation === 'add') {
+                message = `${value} is already in group`
+            } else if(selected.error && operation === 'remove'){
+                message = `${value} was not in group`
+            }
         }
-    } else {
-        await clearTextFieldValueAndLog(value)
+        if(message) throw new Error()
+        await firstContact.click()
+        if(operation === 'remove') {
+            await clickOnButtonWithContentDesc('Clear query')
+        }
+    } catch(e) {
+        if(!message) {
+            message = `${value} doesn't exist in your contact`
+        }
+        clearTextFieldValueAndLog(message, operation)
     }
 }
 
-const clearTextFieldValueAndLog = async (value) => {
-    await clickOnButtonWithContentDesc('Clear query')
-    fs.appendFile('logs.txt', `\n${value} was not added in group`, () => {})
-}
 
 const sendValueToTextField = async (value) => {
     const textField = await getTextField()
     await textField.setValue(value)
 }
 
-const addContact = async (value) => {
+const addContact = async (value, operation) => {
     await sendValueToTextField(value)
-    await selectFirstContactIfItExists(value)
+    await client.pause(2000)
+    await selectFirstContactIfItExists(value, operation)
 }
 
-const create = async () => {
-    const createButton = await client.$('~Create')
-    await waitForElementToExist(createButton)
-    await createButton.click()
+const clickOnButtonWithContentDisc = async (value) => {
+    const button = await client.$(`~${value}`)
+    await waitForElementToExist(button)
+    await button.click()
 }
+
+const create = async () => await clickOnButtonWithContentDisc('Create')
 
 const getMessageInputField = async () => {
     const messageInputSelector = 'new UiSelector().text("Message").className("android.widget.EditText")'
@@ -138,19 +153,85 @@ const renameGroup = async (name) => {
 
 const closeGroup = async () => await navigateUp()
 
+const createNewBroadCastGroup = async (contacts, name) => {
+    await openNewBroadcastView()
+    await clickOnSearch()
+    for(number of contacts) {
+        await addContact(number, 'create')
+    }
+    await create()
+    await renameGroup(name)
+    await closeGroup()
+}
+
+const clearSearchAndLog = async (value) => {
+    await clickOnButtonWithContentDesc('Clear')
+    await clickOnButtonWithContentDisc('Back')
+    fs.appendFile('logs.txt', `\ncan not find group with name ${value}`, () => {})
+    return false
+}
+
+const selectGroupIfItExists = async (name) => {
+    const recyclerView = await client.$('androidx.recyclerview.widget.RecyclerView')
+    try {
+        await waitForElementToExist(recyclerView)
+        const firstContact = recyclerView.$('android.widget.RelativeLayout')
+        await waitForElementToExist(firstContact)
+        await firstContact.click()
+        return true
+
+    } catch (e) {
+        return await clearSearchAndLog(name)
+    }
+}
+
+const searchAndOpenGroup = async (name) => {
+    await clickOnSearch()
+    const textField = await getTextField()
+    await textField.setValue(name)
+    await client.pause(2000)
+    return await selectGroupIfItExists(name)
+}
+
+const clickOnEditRecipients = async () => {
+    const selector = `new UiSelector().resourceId("com.whatsapp:id/add_participant_button")`
+    const button = await client.$(`android=${selector}`)
+    await waitForElementToExist(button)
+    await button.click()
+}
+
+const clickDone = async () => await clickOnButtonWithContentDesc('Done')
+
+const modifyParticipantsToExistingGroup = async (contacts, name, operation) => {
+    if(await searchAndOpenGroup(name)){
+        await selectMoreOptionsButtonWithText('Broadcast list info')
+        await clickOnEditRecipients()
+        await clickOnSearch()
+        for(number of contacts) {
+            await addContact(number, operation)
+        }
+        await clickDone()
+        await navigateUp()
+    }
+    await navigateUp()
+}
+
 const main = async () => {
     client = await wdio.remote(opts)
     for(group of groups) {
-        const { contacts, name } = group
-        fs.appendFile('logs.txt', `\nGroup - ${name}`, () => {})
-        await openNewBroadcastView()
-        await clickOnSearch()
-        for(number of contacts) {
-            await addContact(number)
+        let { contacts, name, operation = '' } = group
+        contacts = [... new Set(contacts)]
+        fs.appendFile('logs.txt', `\nGroup - ${name}, operation - ${operation}\n`, () => {})
+        switch(operation) {
+            case 'add':
+            case 'remove': {
+                await modifyParticipantsToExistingGroup(contacts, name, operation)
+                break
+            }
+            case 'create': {
+                await createNewBroadCastGroup(contacts, name)
+            }
         }
-        await create()
-        await renameGroup(name)
-        await closeGroup()
         // await sendMessage(message)
     }
     await client.deleteSession()
