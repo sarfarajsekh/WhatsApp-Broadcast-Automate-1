@@ -13,6 +13,7 @@ const opts = {
         deviceName: 'OnePlus 8T',
         udid: '6cc4a982',
         automationName: 'UiAutomator2',
+        ignoreHiddenApiPolicyError: true,
     },
 }
 
@@ -23,7 +24,7 @@ const { logId } = configs
 fs.appendFile('logs.txt', `\nCreating log ${logId} at ${date.toString()}\n====================================================`, () => {})
 
 const waitForElementToExist = async (element) => {
-    await element.waitForExist({ timeout : 2000 })
+    await element.waitForExist({ timeout : 5000 })
 }
 
 const openMoreOptions = async () => {
@@ -58,8 +59,8 @@ const openNewBroadcastView = async () => await selectMoreOptionsButtonWithText('
 
 const clickOnSearch = async () => await clickOnButtonWithContentDesc('Search')
 
-const getTextField = async () => {
-    const textSelector = 'new UiSelector().text("Search…").className("android.widget.EditText")'
+const getTextField = async (isAutoComplete) => {
+    const textSelector = `new UiSelector().text("Search…").className(android.widget.${isAutoComplete ? "AutoCompleteTextView" : "EditText"})`
     const textField = await client.$(`android=${textSelector}`)
     await waitForElementToExist(textField)
     return textField
@@ -99,7 +100,7 @@ const selectFirstContactIfItExists = async (value, operation) => {
 
 
 const sendValueToTextField = async (value) => {
-    const textField = await getTextField()
+    const textField = await getTextField(true)
     await textField.setValue(value)
 }
 
@@ -145,7 +146,7 @@ const navigateUp = async () => await clickOnButtonWithContentDesc('Navigate up')
 
 const renameGroup = async (name) => {
     await selectMoreOptionsButtonWithText('Broadcast list info')
-    await clickOnButtonWithContentDesc('Change subject')
+    await selectMoreOptionsButtonWithText('Change broadcast list name')
     await setNewName(name)
     await navigateUp()
 }
@@ -187,7 +188,7 @@ const selectGroupIfItExists = async (name) => {
 
 const searchAndOpenGroup = async (name) => {
     await clickOnSearch()
-    const textField = await getTextField()
+    const textField = await getTextField(false)
     await textField.setValue(name)
     await client.pause(2000)
     return await selectGroupIfItExists(name)
