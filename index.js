@@ -186,7 +186,7 @@ const clearSearchAndLog = async (value) => {
     await clickOnButtonWithContentDesc('Clear')
     await clickOnButtonWithContentDisc('Back')
     const date = new Date()
-    fs.appendFile('logs.txt', `can not find group ${currentGroupId} with name ${currentGroupName}, on ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}\n`, () => {})
+    fs.appendFile('logs.txt', `can not find group ${currentGroupId} with name ${currentGroupName} for operation ${currentOperation}, on ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}\n`, () => {})
     return false
 }
 
