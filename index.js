@@ -4,17 +4,30 @@ const { groups } = require('./groups')
 const { message } = require('./message')
 const { configs } = require('./config')
 
+// const opts = {
+//     path: '/wd/hub',
+//     port: 4723,
+//     capabilities: {
+//         platformName: 'Android',
+//         platformVersion: '11',
+//         deviceName: 'realme5',
+//         udid: '5d052763',
+//         automationName: 'UiAutomator2',
+//     },
+// }
+
 const opts = {
     path: '/wd/hub',
     port: 4723,
     capabilities: {
         platformName: 'Android',
-        platformVersion: '11',
-        deviceName: 'OnePlus 8T',
-        udid: '6cc4a982',
+        platformVersion: '10',
+        deviceName: 'OnePlus 5T',
+        udid: '2b0b4a8e',
         automationName: 'UiAutomator2',
     },
 }
+
 
 let client
 const date = new Date()
@@ -23,7 +36,7 @@ const { logId } = configs
 fs.appendFile('logs.txt', `\nCreating log ${logId} at ${date.toString()}\n====================================================`, () => {})
 
 const waitForElementToExist = async (element) => {
-    await element.waitForExist({ timeout : 2000 })
+    await element.waitForExist({ timeout : 5000 })
 }
 
 const openMoreOptions = async () => {
