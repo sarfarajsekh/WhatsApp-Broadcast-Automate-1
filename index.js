@@ -2,7 +2,6 @@ const fs = require('fs')
 const wdio = require('webdriverio')
 const { groups } = require('./groups')
 const { message } = require('./message')
-const { configs } = require('./config')
 
 // const opts = {
 //     path: '/wd/hub',
@@ -25,15 +24,19 @@ const opts = {
         deviceName: 'OnePlus 5T',
         udid: '2b0b4a8e',
         automationName: 'UiAutomator2',
+        ignoreHiddenApiPolicyError: true,
     },
 }
 
 
 let client
-const date = new Date()
-const { logId } = configs
+let logString = ''
+let currentGroupId
+let currentGroupName
+let currentNumber
+let currentOperation
 
-fs.appendFile('logs.txt', `\nCreating log ${logId} at ${date.toString()}\n====================================================`, () => {})
+fs.appendFile('logs.csv', 'GroupId,GroupName,Operation,Contact Number,Success(1)/Failure(0),date,time\n', () => {})
 
 const waitForElementToExist = async (element) => {
     await element.waitForExist({ timeout : 5000 })
@@ -71,55 +74,57 @@ const openNewBroadcastView = async () => await selectMoreOptionsButtonWithText('
 
 const clickOnSearch = async () => await clickOnButtonWithContentDesc('Search')
 
-const getTextField = async () => {
-    const textSelector = 'new UiSelector().text("Search…").className("android.widget.EditText")'
+const getTextField = async (isAutoComplete) => {
+    const textSelector = `new UiSelector().text("Search…").className(android.widget.${isAutoComplete ? "AutoCompleteTextView" : "EditText"})`
     const textField = await client.$(`android=${textSelector}`)
     await waitForElementToExist(textField)
     return textField
 }
 
-const clearTextFieldValueAndLog = async (message) => {
+const clearTextField = async () => {
     await clickOnButtonWithContentDesc('Clear query')
-    fs.appendFile('logs.txt', message + '\n', () => {})
+    // fs.appendFile('logs.txt', message + '\n', () => {})
 }
 
-const selectFirstContactIfItExists = async (value, operation) => {
-    let message
+const addInLogString = (success) => {
+    const date = new Date()
+    logString += `${currentGroupId},${currentGroupName},${currentOperation},${currentNumber},${success},${date.toLocaleDateString()},${date.toLocaleTimeString()}\n`
+}
+
+const selectFirstContactIfItExists = async (operation) => {
     const listView = await client.$('android.widget.ListView')
     try {
         await waitForElementToExist(listView)
         const firstContact = await listView.$('android.widget.RelativeLayout')
         if(['add', 'remove'].includes(operation)) {
             const selected = await firstContact.$('~Selected')
-            if(!selected.error && operation === 'add') {
-                message = `${value} is already in group`
-            } else if(selected.error && operation === 'remove'){
-                message = `${value} was not in group`
+            if((!selected.error && operation === 'add') || (selected.error && operation === 'remove')) {
+                addInLogString('1')
+                return
             }
         }
-        if(message) throw new Error()
         await firstContact.click()
+        addInLogString('1')
         if(operation === 'remove') {
-            await clickOnButtonWithContentDesc('Clear query')
+            await clearTextField()
         }
     } catch(e) {
-        if(!message) {
-            message = `${value} doesn't exist in your contact`
-        }
-        clearTextFieldValueAndLog(message, operation)
+        addInLogString('0')
+        await clearTextField()
     }
 }
 
 
 const sendValueToTextField = async (value) => {
-    const textField = await getTextField()
+    const textField = await getTextField(true)
     await textField.setValue(value)
 }
 
 const addContact = async (value, operation) => {
+    currentNumber = value
     await sendValueToTextField(value)
     await client.pause(2000)
-    await selectFirstContactIfItExists(value, operation)
+    await selectFirstContactIfItExists(operation)
 }
 
 const clickOnButtonWithContentDisc = async (value) => {
@@ -158,7 +163,7 @@ const navigateUp = async () => await clickOnButtonWithContentDesc('Navigate up')
 
 const renameGroup = async (name) => {
     await selectMoreOptionsButtonWithText('Broadcast list info')
-    await clickOnButtonWithContentDesc('Change subject')
+    await selectMoreOptionsButtonWithText('Change broadcast list name')
     await setNewName(name)
     await navigateUp()
 }
@@ -180,7 +185,8 @@ const createNewBroadCastGroup = async (contacts, name) => {
 const clearSearchAndLog = async (value) => {
     await clickOnButtonWithContentDesc('Clear')
     await clickOnButtonWithContentDisc('Back')
-    fs.appendFile('logs.txt', `\ncan not find group with name ${value}`, () => {})
+    const date = new Date()
+    fs.appendFile('logs.txt', `can not find group ${currentGroupId} with name ${currentGroupName}, on ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}\n`, () => {})
     return false
 }
 
@@ -200,7 +206,7 @@ const selectGroupIfItExists = async (name) => {
 
 const searchAndOpenGroup = async (name) => {
     await clickOnSearch()
-    const textField = await getTextField()
+    const textField = await getTextField(false)
     await textField.setValue(name)
     await client.pause(2000)
     return await selectGroupIfItExists(name)
@@ -225,27 +231,34 @@ const modifyParticipantsToExistingGroup = async (contacts, name, operation) => {
         }
         await clickDone()
         await navigateUp()
+        await navigateUp()
     }
-    await navigateUp()
 }
 
 const main = async () => {
     client = await wdio.remote(opts)
     for(group of groups) {
-        let { contacts, name, operation = '' } = group
+        let { contacts, name, operation = '', id } = group
+        currentGroupId = id
+        currentGroupName = name
         contacts = [... new Set(contacts)]
-        fs.appendFile('logs.txt', `\nGroup - ${name}, operation - ${operation}\n`, () => {})
+        logString = ''
+        currentOperation = ''
         switch(operation) {
             case 'add':
+                currentOperation = '2'
             case 'remove': {
+                if(!currentOperation) currentOperation = '3'
                 await modifyParticipantsToExistingGroup(contacts, name, operation)
                 break
             }
             case 'create': {
+                currentOperation = '1'
                 await createNewBroadCastGroup(contacts, name)
             }
         }
         // await sendMessage(message)
+        fs.appendFile('logs.csv', logString, () => {})
     }
     await client.deleteSession()
 }
