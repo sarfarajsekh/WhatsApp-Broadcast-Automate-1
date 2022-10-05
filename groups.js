@@ -3,27 +3,21 @@ module.exports = {
     groups: [
         {
             id: '1243',
-            name: 'RPE-01',
-            contacts: ['82103243234231','233434234235',],
+            name: 'RPEx-01',
+            contacts: ['6364024251','+918051844634'],
             operation: 'create',
         },
         {
-            id: '1111',
-            name: 'RPE-01',
-            contacts: ['5694930322'],
+            id: '1243',
+            name: 'RPEx-01',
+            contacts: ['7294953113'],
             operation: 'add',
         },
         {
-            id: '1344',
-            name: 'RPE-01',
-            contacts: ['5694930322','1000002030'],
+            id: '1243',
+            name: 'RPEx-01',
+            contacts: ['6364024251'],
             operation: 'remove',
         },
-        {
-            id: '13664',
-            name: 'RPE-001',
-            contacts: ['1000002030'],
-            operation: 'remove',
-        }
     ],
 }

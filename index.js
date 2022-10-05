@@ -39,7 +39,8 @@ let currentOperation
 fs.appendFile('logs.csv', 'GroupId,GroupName,Operation,Contact Number,Success(1)/Failure(0),date,time\n', () => {})
 
 const waitForElementToExist = async (element) => {
-    await element.waitForExist({ timeout : 5000 })
+// delay for list load first time - optimization
+    await element.waitForExist({ timeout : 15000 })
 }
 
 const openMoreOptions = async () => {
@@ -116,14 +117,15 @@ const selectFirstContactIfItExists = async (operation) => {
 
 
 const sendValueToTextField = async (value) => {
-    const textField = await getTextField(true)
+    const textField = await getTextField(false)
     await textField.setValue(value)
 }
 
 const addContact = async (value, operation) => {
     currentNumber = value
     await sendValueToTextField(value)
-    await client.pause(2000)
+// delay for contact to appear - per contact - optimization
+    await client.pause(5000)
     await selectFirstContactIfItExists(operation)
 }
 
@@ -208,7 +210,8 @@ const searchAndOpenGroup = async (name) => {
     await clickOnSearch()
     const textField = await getTextField(false)
     await textField.setValue(name)
-    await client.pause(2000)
+    // delay for group search - optimization
+    await client.pause(25000)
     return await selectGroupIfItExists(name)
 }
 
