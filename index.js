@@ -230,11 +230,12 @@ const main = async () => {
         currentGroupName = name
         contacts = [... new Set(contacts)]
         logString = ''
+        currentOperation = ''
         switch(operation) {
             case 'add':
                 currentOperation = '2'
             case 'remove': {
-                currentOperation = '3'
+                if(!currentOperation) currentOperation = '3'
                 await modifyParticipantsToExistingGroup(contacts, name, operation)
                 break
             }
