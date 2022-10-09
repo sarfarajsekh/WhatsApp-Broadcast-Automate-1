@@ -87,6 +87,7 @@ const selectFirstContactIfItExists = async (operation) => {
             const selected = await firstContact.$('~Selected')
             if((!selected.error && operation === 'add') || (selected.error && operation === 'remove')) {
                 addInLogString('1')
+                await clearTextField()
                 return
             }
         }
