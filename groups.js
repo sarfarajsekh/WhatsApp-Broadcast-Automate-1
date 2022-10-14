@@ -1,4 +1,4 @@
-// 1. create 2. add 3. remove 4. read
+// 1. create 2. add 3. remove 4. read-number 5. read-name 6. read-contacts
 module.exports = {
     groups: [
         {
@@ -24,6 +24,15 @@ module.exports = {
             name: 'RPE-001',
             contacts: ['1000002030'],
             operation: 'remove',
+        },
+        {
+            id: '123',
+            name: 'RPE1',
+            operation: 'read-number'
+        },
+        {
+            id: '134',
+            operation: 'read-contacts'
         }
     ],
 }
