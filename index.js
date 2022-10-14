@@ -25,8 +25,8 @@ let currentOperation
 
 fs.appendFile('logs.csv', 'GroupId,GroupName,Operation,Contact Number,Success(1)/Failure(0),date,time\n', () => {})
 
-const waitForElementToExist = async (element) => {
-    await element.waitForExist({ timeout : 5000 })
+const waitForElementToExist = async (element, timeout = 5000) => {
+    await element.waitForExist({ timeout })
 }
 
 const openMoreOptions = async () => {
@@ -200,10 +200,21 @@ const searchAndOpenGroup = async (name) => {
     return await selectGroupIfItExists(name)
 }
 
+const getElementByResourceId = async (resourceId) => {
+    const selector = `new UiSelector().resourceId("${resourceId}")`
+    const element = await client.$(`android=${selector}`)
+    await waitForElementToExist(element)
+    return element
+}
+
+const getElementsByResourceId = async (resourceId) => {
+    const selector = `new UiSelector().resourceId("${resourceId}")`
+    const elements = await client.$$(`android=${selector}`)
+    return elements
+}
+
 const clickOnEditRecipients = async () => {
-    const selector = `new UiSelector().resourceId("com.whatsapp:id/add_participant_button")`
-    const button = await client.$(`android=${selector}`)
-    await waitForElementToExist(button)
+    const button = await getElementByResourceId('com.whatsapp:id/add_participant_button')
     await button.click()
 }
 
@@ -223,6 +234,129 @@ const modifyParticipantsToExistingGroup = async (contacts, name, operation) => {
     }
 }
 
+const getNumberOfParticipants = async () => {
+    const participantsElement = await getElementByResourceId('com.whatsapp:id/participants_title')
+    waitForElementToExist(participantsElement)
+    const participantsInfo = await participantsElement.getText()
+    return Number(participantsInfo.split(' ')[0])
+}
+
+const swipeDown = async () => {
+    const { height, width } = await client.getWindowSize()
+    const anchorPercent = 50
+    const startPointPercent = 95
+    const endPointPercent = 40
+
+    const anchor = width * anchorPercent / 100
+    const startPoint = height * startPointPercent / 100
+    const endPoint = height * endPointPercent / 100
+
+    await client.touchPerform([
+        {
+            action: 'press',
+            options: {
+                x: anchor,
+                y: startPoint
+            }
+        },
+        {
+            action: 'wait',
+            options: {
+                ms: '1000'
+            }
+        },
+        {
+            action: 'moveTo',
+            options: {
+                x: anchor,
+                y: endPoint
+            }
+        },
+        {
+            action: 'release',
+            options: {}
+        }
+    ])
+}
+
+const getParticipantNumber = async (participant) => {
+    await participant.click()
+    const list = await getElementByResourceId('android:id/select_dialog_listview')
+    const listItems = await list.$$('android.widget.LinearLayout')
+    const viewElement = listItems[1]
+    await viewElement.click()
+    const phoneNumberElement = await getElementByResourceId('com.whatsapp:id/contact_subtitle')
+    return phoneNumberElement.getText()
+}
+
+const scrollAndGetContacts = async (conditionCb, operationCb, resourceId) => {
+    while(conditionCb()) {
+        const visibleContacts = await getElementsByResourceId(resourceId)
+        for(let contact of visibleContacts) {
+            try {
+                await waitForElementToExist(contact, 3000)
+                await operationCb(contact)
+            } catch (_) {
+                continue
+            }
+        }
+        await swipeDown()
+    }
+}
+
+const getParticipantName = async (participant) => {
+    return participant.getText()
+}
+
+const exportSetIntoFile = (set, fileName) => {
+    const it = set.values()
+    let done = false
+    let vals = ''
+    while(!done) {
+        const val = it.next()
+        if(!val.done)
+        vals+=val.value+'\n'
+        done = val.done
+    }
+    fs.appendFile(`${fileName}.txt`, vals, () => {})
+}
+const readBroadCastGroup = async (name, readNumber) => {
+    if(await searchAndOpenGroup(name)) {
+        await selectMoreOptionsButtonWithText('Broadcast list info')
+        const participantsCount = await getNumberOfParticipants()
+        const contacts = new Set()
+        const conditionCb = () => contacts.size !== participantsCount
+        const operationCb = readNumber ? async (val) => {
+            const num = await getParticipantNumber(val)
+            await navigateUp()
+            contacts.add(num)
+        } : async (val) => {
+            const name = await getParticipantName(val)
+            contacts.add(name)
+        }
+        await scrollAndGetContacts(conditionCb, operationCb, readNumber ? 'com.whatsapp:id/group_chat_info_layout' : 'com.whatsapp:id/name')
+        await navigateUp()
+        await navigateUp()
+        exportSetIntoFile(contacts, name)
+    }
+}
+
+const readContacts = async () => {
+    const contacts = new Set()
+    let lastContactsSize = -1
+    const conditionCb = () => {
+        if(lastContactsSize === contacts.size) return false
+        lastContactsSize = contacts.size
+        return true
+    }
+    const operationCb = async (val) => {
+        const name = await getParticipantName(val)
+        contacts.add(name)
+    }
+    await scrollAndGetContacts(conditionCb, operationCb, 'com.whatsapp:id/conversations_row_contact_name')
+    exportSetIntoFile(contacts, 'total-contacts-names.txt')
+}
+
 const main = async () => {
     client = await wdio.remote(opts)
     for(group of groups) {
@@ -232,6 +366,7 @@ const main = async () => {
         contacts = [... new Set(contacts)]
         logString = ''
         currentOperation = ''
+        let readNumber;
         switch(operation) {
             case 'add':
                 currentOperation = '2'
@@ -243,10 +378,25 @@ const main = async () => {
             case 'create': {
                 currentOperation = '1'
                 await createNewBroadCastGroup(contacts, name)
+                break
+            }
+            case 'read-number':
+                readNumber = true
+                currentOperation = '4'
+            case 'read-name':
+                if(!currentOperation) currentOperation = '5'
+                readNumber = !!readNumber
+                await readBroadCastGroup(name, readNumber)
+                break
+            case 'read-contacts': {
+                currentOperation = '6'
+                await readContacts()
             }
         }
         // await sendMessage(message)
-        fs.appendFile('logs.csv', logString, () => {})
+        if(logString) {
+            fs.appendFile('logs.csv', logString, () => {})
+        }
     }
     await client.deleteSession()
 }
