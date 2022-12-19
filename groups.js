@@ -33,6 +33,11 @@ module.exports = {
         {
             id: '134',
             operation: 'read-contacts'
+        },
+        {
+            id: '1234',
+            operation: 'read-by-keyword',
+            keyword: 'Aik'
         }
     ],
 }
