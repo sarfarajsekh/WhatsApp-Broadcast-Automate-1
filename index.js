@@ -332,8 +332,13 @@ const exportSetIntoFile = (set, fileName) => {
         vals+=val.value+'\n'
         done = val.done
     }
-    fs.appendFile(`${fileName}.txt`, vals, () => {})
+    fs.writeFile(`${fileName}.txt`, vals, () => {})
 }
+
+const logContact = (contact, fileName) => {
+    fs.appendFile(`${fileName}.txt`, contact)
+}
+
 const readBroadCastGroup = async (name, readNumber) => {
     if(await searchAndOpenGroup(name)) {
         await selectMoreOptionsButtonWithText('Broadcast list info')
@@ -345,13 +350,16 @@ const readBroadCastGroup = async (name, readNumber) => {
             lastContactSize = contacts.size
             return true
         }
+        const fileName = name+`-${participantsCount}`
         const operationCb = readNumber ? async (val) => {
             const num = await getParticipantNumber(val)
             await navigateUp()
             contacts.add(num)
+            logContact(num, fileName)
         } : async (val) => {
             const name = await getParticipantName(val)
             contacts.add(name)
+            logContact(num, fileName)
         }
         const swipeCb = async () => {
             await swipeDown(50, 95, 40)
