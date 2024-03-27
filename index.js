@@ -1,6 +1,6 @@
 const fs = require('fs')
 const wdio = require('webdriverio')
-const { groups } = require('./groups')
+const { groups } = require('./src/groups')
 const { message } = require('./message')
 
 const opts = {
@@ -8,13 +8,30 @@ const opts = {
     port: 4723,
     capabilities: {
         platformName: 'Android',
-        platformVersion: '12',
-        deviceName: 'OnePlus 10T 5G',
-        udid: '8edf3315',
-        automationName: 'UiAutomator2',
-        ignoreHiddenApiPolicyError: true,
+        'appium:platformVersion': '13.1',
+        'appium:udid': '8edf3315',
+        'appium:automationName': 'UiAutomator2',
+        'appium:useNewWDA': false,
+        'appium:usePrebuiltWDA': true,
+        'appium:noReset': true,
+        'appium:fullReset': false,
     },
 }
+
+// const opts = {
+//     path: '/wd/hub',
+//     port: 4723,
+//     capabilities: {
+//         platformName: 'Android',
+//         platformVersion: '11',
+//         deviceName: 'realme5',
+//         udid: '5d052763',
+//         automationName: 'UiAutomator2',
+//         ignoreHiddenApiPolicyError: true,
+//         // keep screen on while charging.
+//     },
+// }
+
 
 let client
 let logString = ''
@@ -25,15 +42,13 @@ let currentOperation
 
 fs.appendFile('logs.csv', 'GroupId,GroupName,Operation,Contact Number,Success(1)/Failure(0),date,time\n', () => {})
 
-const waitForElementToExist = async (element, timeout = 5000) => {
+const waitForElementToExist = async (element, timeout = 55000) => {
 // delay for list load first time - optimization
+// changed origin - 35000
     await element.waitForExist({ timeout })
 }
 
-const openMoreOptions = async () => {
-    const moreOptions = await client.$('~More options')
-    await moreOptions.click()
-}
+const openMoreOptions = async () => await clickOnButtonWithContentDesc('More options')
 
 const getMoreOptionButtonWithText = async (value) => {
     const selector = `new UiSelector().text("${value}").className("android.widget.TextView")`
@@ -53,9 +68,11 @@ const selectMoreOptionsButtonWithText = async (value) => {
 }
 
 const clickOnButtonWithContentDesc = async (value) => {
-    const button = await client.$(`~${value}`)
-    await waitForElementToExist(button)
-    await button.click()
+    const {x, y} = await client.$(`~${value}`).getLocation();
+    await client.touchPerform([{
+        action: 'tap',
+        options: {x: x+10, y: y+10}
+    }])
 }
 
 const openNewBroadcastView = async () => await selectMoreOptionsButtonWithText('New broadcast')
@@ -82,7 +99,7 @@ const addInLogString = (success) => {
 const selectFirstContactIfItExists = async (operation) => {
     const listView = await client.$('android.widget.ListView')
     try {
-        await waitForElementToExist(listView)
+        await waitForElementToExist(listView, 6000)
         const firstContact = await listView.$('android.widget.RelativeLayout')
         if(['add', 'remove'].includes(operation)) {
             const selected = await firstContact.$('~Selected')
@@ -105,7 +122,7 @@ const selectFirstContactIfItExists = async (operation) => {
 
 
 const sendValueToTextField = async (value) => {
-    const textField = await getTextField(true)
+    const textField = await getTextField(false)
     await textField.setValue(value)
 }
 
@@ -113,7 +130,7 @@ const addContact = async (value, operation) => {
     currentNumber = value
     await sendValueToTextField(value)
 // delay for contact to appear - per contact - optimization
-    await client.pause(2000)
+    await client.pause(10000)
     await selectFirstContactIfItExists(operation)
 }
 
@@ -125,22 +142,10 @@ const clickOnButtonWithContentDisc = async (value) => {
 
 const create = async () => await clickOnButtonWithContentDisc('Create')
 
-const getMessageInputField = async () => {
-    const messageInputSelector = 'new UiSelector().text("Message").className("android.widget.EditText")'
-    const messageInputField = await client.$(`android=${messageInputSelector}`)
-    await waitForElementToExist(messageInputField)
-    return messageInputField
-}
-
-const sendMessage = async (value) => {
-    const messageInputField = await getMessageInputField()
-    await messageInputField.setValue(value)
-    await clickOnButtonWithContentDesc('Send')
-}
-
 const setNewName = async (value) => {
     const textBox = await client.$('android.widget.EditText')
     await waitForElementToExist(textBox)
+    console.log('value', value)
     await textBox.setValue(value)
     const okButtonSelector = 'new UiSelector().text("OK").className("android.widget.Button")'
     const okButton = await client.$(`android=${okButtonSelector}`)
@@ -149,12 +154,16 @@ const setNewName = async (value) => {
 
 }
 
-const navigateUp = async () => await clickOnButtonWithContentDesc('Navigate up')
+const navigateUp = async () => {
+    await clickOnButtonWithContentDesc('Navigate up')
+    await client.pause(1000)
+}
 
 const renameGroup = async (name) => {
     await selectMoreOptionsButtonWithText('Broadcast list info')
     await selectMoreOptionsButtonWithText('Change broadcast list name')
     await setNewName(name)
+    await client.pause(2000)
     await navigateUp()
 }
 
@@ -176,7 +185,11 @@ const clearSearchAndLog = async (value) => {
     await clickOnButtonWithContentDesc('Clear')
     await clickOnButtonWithContentDisc('Back')
     const date = new Date()
-    fs.appendFile('logs.txt', `can not find group ${currentGroupId} with name ${currentGroupName}, on ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}\n`, () => {})
+    fs.appendFile(
+        'logs.txt',
+        `can not find group ${currentGroupId} with name ${currentGroupName} for operation ${currentOperation}, on ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}\n`,
+        () => {}
+    )
     return false
 }
 
@@ -199,7 +212,9 @@ const searchGroup = async (name) => {
     const textField = await getTextField(false)
     await textField.setValue(name)
     // delay for group search - optimization
-    await client.pause(2000)
+
+    //changed - orginal 25000
+    await client.pause(5000)
 }
 
 const searchAndOpenGroup = async (name) => {
@@ -229,9 +244,16 @@ const clickDone = async () => await clickOnButtonWithContentDesc('Done')
 
 const modifyParticipantsToExistingGroup = async (contacts, name, operation) => {
     if(await searchAndOpenGroup(name)){
-        await selectMoreOptionsButtonWithText('Broadcast list info')
+        // await selectMoreOptionsButtonWithText('Broadcast list info')
+        const header = await getElementByResourceId('com.whatsapp:id/conversation_contact_name')
+        await  header.click()
         await clickOnEditRecipients()
-        await clickOnSearch()
+        // await clickOnSearch()
+        const searchButton = await getElementByResourceId('com.whatsapp:id/menuitem_search')
+        await searchButton.click()
+        // fs.appendFileSync('log.txt', JSON.stringify(searchButton));
+        // await searchButton.click()
+        // fs.appendFileSync('log.txt', 'clicked')
         for(number of contacts) {
             await addContact(number, operation)
         }
@@ -248,30 +270,22 @@ const getNumberOfParticipants = async () => {
     return Number(participantsInfo.split(' ')[0])
 }
 
-const swipeDown = async (xAnchorPercent, startYAnchorPercent, endYAnchorPercent) => {
+const longPress = async (xAnchorPercent, yAnchorPercent) => {
     const { height, width } = await client.getWindowSize()
-    const anchor = width * xAnchorPercent / 100
-    const startPoint = height * startYAnchorPercent / 100
-    const endPoint = height * endYAnchorPercent / 100
+    const xAnchor = width * xAnchorPercent / 100
+    const yAnchor = height * yAnchorPercent / 100
     await client.touchPerform([
         {
             action: 'press',
             options: {
-                x: anchor,
-                y: startPoint
+                x: xAnchor,
+                y: yAnchor
             }
         },
         {
             action: 'wait',
             options: {
-                ms: '1000'
-            }
-        },
-        {
-            action: 'moveTo',
-            options: {
-                x: anchor,
-                y: endPoint
+                ms: '2000'
             }
         },
         {
@@ -281,32 +295,86 @@ const swipeDown = async (xAnchorPercent, startYAnchorPercent, endYAnchorPercent)
     ])
 }
 
+const press = async (xAnchorPercent, yAnchorPercent) => {
+    const { height, width } = await client.getWindowSize()
+    const xAnchor = width * xAnchorPercent / 100
+    const yAnchor = height * yAnchorPercent / 100
+    await client.touchPerform([
+        {
+            action: 'press',
+            options: {
+                x: xAnchor,
+                y: yAnchor
+            }
+        },
+        {
+            action: 'release',
+            options: {}
+        }
+    ])
+}
+
+const swipeDown = async (xAnchorPercent, startYAnchorPercent, endYAnchorPercent) => {
+    const { height, width } = await client.getWindowSize()
+    const anchor = width * xAnchorPercent / 100
+    const startPoint = height * startYAnchorPercent / 100
+    const endPoint = height * endYAnchorPercent / 100
+    await client.performActions([
+        {
+            type: 'pointer',
+            id: 'finger',
+            parameters: { pointerType: 'touch' },
+            actions: [
+                { type: 'pointerMove', duration: 0, x: anchor, y: startPoint },
+                { type: 'pointerDown', button: 0 },
+                { type: 'pause', duration: 100 },
+                { type: 'pointerMove', duration: 3, x: anchor, y: endPoint },
+                { type: 'pointerUp', button: 0 }
+            ]
+        }
+    ])
+}
+
 const getPhoneNumber = async () => {
     const phoneNumberElement = await getElementByResourceId('com.whatsapp:id/contact_subtitle', 2000)
     return phoneNumberElement.getText()
 }
 
-const getParticipantNumber = async (participant) => {
-    await participant.click()
-    const list = await getElementByResourceId('android:id/select_dialog_listview', 2000)
-    const listItems = await list.$$('android.widget.LinearLayout')
-    const viewElement = listItems[1]
-    await viewElement.click()
-    let phoneNumber
-    try {
-        phoneNumber = await getPhoneNumber()
-    } catch(_) {
+const scrossAndGetElement = async (resourceId) => {
+    while(true) {
         await swipeDown(50, 95, 40)
-        const phoneNumberElement = await getElementByResourceId('com.whatsapp:id/title_tv')
-        phoneNumber = phoneNumberElement.getText()
+        try {
+            const resource = await getElementByResourceId(resourceId, 2000)
+            return resource.getText()
+        } catch (e) {
+            continue;
+        }
     }
-    return phoneNumber
+}
+
+const getParticipantNumber = async (participant) => {
+    try {
+        await participant.click()
+        const list = await getElementByResourceId('android:id/select_dialog_listview', 2000)
+        const listItems = await list.$$('android.widget.LinearLayout')
+        const viewElement = listItems[1]
+        await viewElement.click()
+        let phoneNumber
+        try {
+            phoneNumber = await getPhoneNumber()
+            return phoneNumber;
+        } catch(_) {
+            return scrossAndGetElement('com.whatsapp:id/title_tv')
+        }
+    } catch(e) {
+        throw new Error('cannot click');
+    }
 }
 
 const scrollAndGetContacts = async (conditionCb, operationCb, resourceId, swipeCb) => {
     while(conditionCb()) {
         const visibleContacts = await getElementsByResourceId(resourceId)
-        for(let contact of visibleContacts) {
+        for await (let contact of visibleContacts) {
             try {
                 await waitForElementToExist(contact, 3000)
                 await operationCb(contact)
@@ -332,16 +400,19 @@ const exportSetIntoFile = (set, fileName) => {
         vals+=val.value+'\n'
         done = val.done
     }
-    fs.writeFile(`${fileName}.txt`, vals, () => {})
+    fs.writeFileSync(`${fileName}.txt`, vals, () => {})
 }
 
 const logContact = (contact, fileName) => {
-    fs.appendFile(`${fileName}.txt`, contact)
+    fs.appendFileSync(`${fileName}.txt`, contact + '\n')
 }
+
 
 const readBroadCastGroup = async (name, readNumber) => {
     if(await searchAndOpenGroup(name)) {
-        await selectMoreOptionsButtonWithText('Broadcast list info')
+        // await selectMoreOptionsButtonWithText('Broadcast list info')
+        const header = await getElementByResourceId('com.whatsapp:id/conversation_contact_name')
+        await  header.click()
         const participantsCount = await getNumberOfParticipants()
         const contacts = new Set()
         let lastContactSize = -1
@@ -424,7 +495,9 @@ const readSearchedContacts = async (keyword) => {
         }
         try{
             const phoneNumber = await getPhoneNumber()
+            fs.appendFileSync(`${keyword}-live.txt`, phoneNumber+'\n')
             contacts.add(phoneNumber)
+
         }catch(e) {}
         await navigateUp()
         await navigateUp()
@@ -443,10 +516,103 @@ const readContactsByKeyWord = async (keyword) => {
     await readSearchedContacts(keyword)
 }
 
+const getContactNumber = async (contact) => {
+    await contact.click()
+    const contactNameOrNumber = await getElementByResourceId('com.whatsapp:id/conversation_contact_name', 2000)
+    const nameOrNumber = await contactNameOrNumber.getText();
+    if(phone(nameOrNumber).isValid) {
+        return { number: nameOrNumber, navUp: false }
+    }
+    const contactHeader = await getElementByResourceId('com.whatsapp:id/conversation_contact', 2000)
+    await contactHeader.click()
+    try {
+        const numberElement = await getElementByResourceId('com.whatsapp:id/contact_subtitle', 2000)
+        const num = await numberElement.getText()
+        return { number: num, navUp: true }
+    } catch (e) {
+        try {
+            await getElementByResourceId('com.whatsapp:id/business_verification_status_text', 2000)
+            const num = await scrossAndGetElement('com.whatsapp:id/title_tv')
+            return { number: num, navUp: true }
+        } catch (err) {
+            return null
+        }
+    }
+}
+
+const readContactsNumber = async () => {
+    const contacts = new Set()
+    let lastContactsSize = -1
+    const conditionCb = () => {
+        if(lastContactsSize === contacts.size) return false
+        lastContactsSize = contacts.size
+        return true
+    }
+    const operationCb = async (val) => {
+        const res = await getContactNumber(val)
+        let navUp = true;
+        console.log('res', res)
+        if (res) {
+            if(res.number) {
+                contacts.add(res.number)
+                fs.appendFileSync('total-contacts-number-live.txt', res.number+'\n')
+            }
+            navUp = res.navUp
+        }
+        if(navUp) {
+            await navigateUp();
+        }
+        await navigateUp();
+    }
+    const swipeCb = async () => {
+        await swipeDown(50, 95, 40)
+    }
+    await scrollAndGetContacts(conditionCb, operationCb, 'com.whatsapp:id/contact_row_container', swipeCb)
+    exportSetIntoFile(contacts, 'total-contacts-number')
+}
+
+const selectContactIfItExists = async (contact) => {
+    const listView = await client.$('android.widget.ListView')
+    try {
+        await waitForElementToExist(listView, 6000)
+        const firstContact = await listView.$('android.widget.RelativeLayout')
+        await firstContact.click()
+    } catch(e) {
+        for (let i=0; i<contact.length; i++) {
+            await client.pressKeyCode(67)
+        }
+    }
+}
+
+const selectContact = async (value) => {
+    const textField = await getElementByResourceId('com.whatsapp:id/search_src_text')
+    await textField.setValue(value)
+// delay for contact to appear - per contact - optimization
+    await client.pause(2000)
+    await selectContactIfItExists(value)
+}
+
+const sendMessage = async (from, to, lastTwo) => {
+    await searchAndOpenGroup(from);
+    await longPress(70, 70)
+    if(lastTwo) {
+        await press(70, 40)
+    }
+    await press(95, 10)
+    await press(95, 10)
+    for await(let contact of to) {
+        await selectContact(contact)
+    }
+    const sendButton = await getElementByResourceId('com.whatsapp:id/send')
+    await sendButton.click()
+    await navigateUp()
+}
+
 const main = async () => {
     client = await wdio.remote(opts)
+    console.log('client started')
     for(group of groups) {
-        let { contacts, name, operation = '', id, keyword } = group
+        let { contacts, name, operation = '', id, keyword, from, to, lastTwo = false } = group
         currentGroupId = id
         currentGroupName = name
         contacts = [... new Set(contacts)]
@@ -479,12 +645,21 @@ const main = async () => {
                 await readContacts()
                 break
             }
+            case 'read-contacts-number': {
+                currentOperation = '7'
+                await readContactsNumber()
+                break
+            }
             case 'read-by-keyword': {
                 await readContactsByKeyWord(keyword)
                 break
             }
+            // case 'send-message': {
+            //     currentOperation = '8'
+            //     await sendMessage(from, to, lastTwo)
+            //     break
+            // }
         }
-        // await sendMessage(message)
         if(logString) {
             fs.appendFile('logs.csv', logString, () => {})
         }
