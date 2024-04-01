@@ -11,7 +11,7 @@ export default async (contacts, name, operation) => {
         await selectMoreOptionsButtonWithText('Broadcast list info')
         await clickOnEditRecipients()
         await clickOnSearch()
-        for(number of contacts) {
+        for(const number of contacts) {
             await addContact(number, operation)
         }
         await clickOnDone()

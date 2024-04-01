@@ -1,5 +1,5 @@
 import fs from 'fs';
-import wdio from 'webdriverio';
+import { remote } from 'webdriverio';
 import {groups} from './groups.js';
 import {
     createNewBroadCastGroup,
@@ -18,8 +18,10 @@ const opts = {
     port: 4723,
     capabilities: {
         platformName: 'Android',
-        'appium:platformVersion': '14',
-        'appium:udid': '8edf3315',
+        // 'appium:platformVersion': '14',
+        // 'appium:udid': 'R5CW41MYC4J',
+        'appium:platformVersion': '10',
+        'appium:udid': '2b0b4a8e',
         'appium:automationName': 'UiAutomator2',
         'appium:useNewWDA': false,
         'appium:usePrebuiltWDA': true,
@@ -38,7 +40,7 @@ const instantiateGlobalVariables = () => {
 }
 
 const instantitateLogFile = () => fs.appendFileSync('logs.csv', 'GroupId,GroupName,Operation,Contact Number,Success(1)/Failure(0),date,time\n', () => {})
-const instantiateClient = async () =>  global.client = await wdio.remote(opts);
+const instantiateClient = async () =>  global.client = await remote(opts);
 const deleteClient = async () => await client.deleteSession();
 
 const start = async () => {

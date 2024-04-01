@@ -4,6 +4,7 @@ import selectFirstContactIfItExists from "./select-first-contact.js";
 export default async (value, operation) => {
     await sendValueToTextField(value)
     // delay for contact to appear - per contact - optimization
-    await client.pause(10000)
+    // When number is entered in search to add into broadcast group.
+    await client.pause(50000)
     await selectFirstContactIfItExists(operation, value)
 }

@@ -12,6 +12,6 @@
   "license": "ISC",
   "dependencies": {
     "phone": "^3.1.37",
-    "webdriverio": "^7.16.3"
+    "webdriverio": "^8.35.1"
   }
 }

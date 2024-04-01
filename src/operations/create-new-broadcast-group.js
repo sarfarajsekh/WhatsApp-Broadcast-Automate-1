@@ -2,7 +2,7 @@ import { openNewBroadcastView, addContact, clickOnSearch, renameGroup, clickOnCr
 
 export default async (contacts, name) => {
     await openNewBroadcastView()
-    await clickOnSearch()
+    await clickOnSearch(true)
     for(let number of contacts) {
         await addContact(number, 'create')
     }

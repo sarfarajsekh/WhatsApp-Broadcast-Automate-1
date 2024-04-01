@@ -1,3 +1,3 @@
 import clickOnButtonWithContentDesc from "./click-on-button-with-content-description.js";
 
-export default async () => await clickOnButtonWithContentDesc('Clear query')
+export default async () => await clickOnButtonWithContentDesc('Clear text')
