@@ -4,6 +4,7 @@ import waitForElementToExist from "./wait-for-element-to-exist.js";
 export default async (conditionCb, operationCb, resourceId, swipeCb) => {
     while(conditionCb()) {
         const visibleContacts = await getElementsByResourceId(resourceId)
+        visibleContacts.pop()
         for await (let contact of visibleContacts) {
             try {
                 await waitForElementToExist(contact, 3000)

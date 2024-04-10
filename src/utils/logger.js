@@ -9,8 +9,20 @@ export class Logger {
         fs.appendFileSync(`${logDir}/${logFileName}`, '')
     }
 
+    getFileName() {
+        return this.#logFileName;
+    }
+
+    setFileName(fileName) {
+        this.#logFileName = fileName
+    }
+
     log(logString) {
         fs.appendFileSync(`${this.#logDir}/${this.#logFileName}`, `${logString}\n`);
+    }
+
+    logOverwrite(logString) {
+        fs.writeFileSync(`${this.#logDir}/${this.#logFileName}`, `${logString}\n`)
     }
 }
 

@@ -26,8 +26,13 @@ export const groups = [
         // },
         // {
         //     id: '123',
-        //     name: 'RPE1',
+        //     name: 'RPE2',
         //     operation: 'read-number'
+        // },
+        // {
+        //     id: '123',
+        //     name: 'RPE2',
+        //     operation: 'read-name'
         // },
         // {
         //     id: '123',
@@ -46,10 +51,10 @@ export const groups = [
         //     to: ['Todo','fffx','wifu'],
         //     lastTwo: true // use false for only last msg
         // }
-        {
-            id: '134',
-            operation: 'read-contacts'
-        },
+        // {
+        //     id: '134',
+        //     operation: 'read-contacts'
+        // },
         // {
         //     id: '1234',
         //     operation: 'read-by-keyword',

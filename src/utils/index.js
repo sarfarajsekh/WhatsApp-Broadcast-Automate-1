@@ -31,7 +31,7 @@ export {default as scrollAndGetElement} from './scroll-and-get-element.js';
 export {default as getParticipantNumber} from './get-participant-number.js';
 export {default as scrollAndGetContacts} from './scroll-and-get-contacts.js';
 export {default as getParticipantName} from './get-participant-name.js';
-export {default as exportSetIntoFile} from './export-set-into-file.js';
+export {default as exportSetIntoFile, getContactsStringFromSet} from './export-set-into-file.js';
 export {default as logContact} from './log-contact.js';
 export {default as readSearchedContacts} from './read-searched-contacts.js';
 export {default as getContactNumber} from './get-contact-number.js';

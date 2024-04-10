@@ -8,7 +8,8 @@ import {
     swipeDown,
     scrollAndGetContacts,
     navigateUp,
-    exportSetIntoFile
+    ResultLogger,
+    getContactsStringFromSet
 } from "../utils/index.js"
 
 export default async (name, readNumber) => {
@@ -22,16 +23,17 @@ export default async (name, readNumber) => {
             lastContactSize = contacts.size
             return true
         }
-        const fileName = name+`-${participantsCount}`
+        const logger = new ResultLogger({groupName: `${currentGroupName}-${readNumber ? 'read-number' : 'read-name'}`});
+        logger.log(`Number of participants: ${participantsCount}`);
         const operationCb = readNumber ? async (val) => {
             const num = await getParticipantNumber(val)
             await navigateUp()
             contacts.add(num)
-            logContact(num, fileName)
+            logger.log(num)
         } : async (val) => {
             const name = await getParticipantName(val)
             contacts.add(name)
-            logContact(num, fileName)
+            logger.log(name)
         }
         const swipeCb = async () => {
             await swipeDown(50, 95, 40)
@@ -39,6 +41,7 @@ export default async (name, readNumber) => {
         await scrollAndGetContacts(conditionCb, operationCb, readNumber ? 'com.whatsapp:id/group_chat_info_layout' : 'com.whatsapp:id/name', swipeCb)
         await navigateUp()
         await navigateUp()
-        exportSetIntoFile(contacts, name+`-${participantsCount}`)
+        const contactsString = getContactsStringFromSet(contacts);
+        logger.logOverwrite(`Number of participants: ${participantsCount}\n${contactsString}`)
     }
 }

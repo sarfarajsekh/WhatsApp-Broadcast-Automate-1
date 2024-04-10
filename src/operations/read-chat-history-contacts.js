@@ -1,12 +1,14 @@
-import fs from 'fs';
 import {
     getParticipantName,
     exportSetIntoFile,
     scrollAndGetContacts,
-    swipeDown
+    swipeDown,
+    ResultLogger,
+    getContactsStringFromSet
 } from "../utils/index.js"
 
 export default async () => {
+    const logger = new ResultLogger({groupName: 'total-contacts-names'});
     const contacts = new Set()
     let lastContactsSize = -1
     const conditionCb = () => {
@@ -17,11 +19,12 @@ export default async () => {
     const operationCb = async (val) => {
         const name = await getParticipantName(val)
         contacts.add(name)
-        fs.appendFileSync('total-contacts-names-live.txt', name+'\n')
+        logger.log(name+'\n');
     }
     const swipeCb = async () => {
         await swipeDown(50, 80, 20)
     }
     await scrollAndGetContacts(conditionCb, operationCb, 'com.whatsapp:id/conversations_row_contact_name', swipeCb)
-    exportSetIntoFile(contacts, 'total-contacts-names')
+    const contactsString = getContactsStringFromSet(contacts);
+    logger.logOverwrite(contactsString);
 }

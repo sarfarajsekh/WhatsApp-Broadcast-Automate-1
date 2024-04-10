@@ -13,22 +13,33 @@ import { OperationLogger, ResultLogger } from './utils/logger.js';
 
 let logger;
 
+const commonCapabilities = {
+    platformName: 'Android',
+    'appium:automationName': 'UiAutomator2',
+    'appium:useNewWDA': false,
+    'appium:usePrebuiltWDA': true,
+    'appium:noReset': true,
+    'appium:fullReset': false,
+    'appium:ignoreHiddenApiPolicyError': true,
+}
+
+const capabilities = {
+    'onePlus10T': {
+        'appium:platformVersion': '14',
+        'appium:udid': '8edf3315',
+        ...commonCapabilities
+    },
+    'emulator-5554': {
+        'appium:platformVersion': '13',
+        'appium:udid': 'emulator-5554',
+        ...commonCapabilities
+    }
+}
+
 const opts = {
     path: '/wd/hub',
     port: 4723,
-    capabilities: {
-        platformName: 'Android',
-        // 'appium:platformVersion': '14',
-        // 'appium:udid': 'R5CW41MYC4J',
-        'appium:platformVersion': '10',
-        'appium:udid': '2b0b4a8e',
-        'appium:automationName': 'UiAutomator2',
-        'appium:useNewWDA': false,
-        'appium:usePrebuiltWDA': true,
-        'appium:noReset': true,
-        'appium:fullReset': false,
-        'appium:ignoreHiddenApiPolicyError': true,
-    },
+    capabilities: capabilities['emulator-5554']
 }
 
 const instantiateGlobalVariables = () => {
@@ -53,8 +64,6 @@ const start = async () => {
         let readNumber;
         if(['add', 'remove', 'create'].includes(operation)) {
             logger = new OperationLogger({operationName: operation, groupName: name})
-        } else {
-            logger = new ResultLogger({groupName: name ? name : operation})
         }
         switch(operation) {
             case 'add':

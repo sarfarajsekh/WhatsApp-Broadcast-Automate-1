@@ -7,7 +7,7 @@ export default async (value) => {
     await clickOnButtonWithContentDesc('Back')
     const date = new Date()
     fs.appendFile(
-        'logs.txt',
+        './logs/logs.txt',
         `can not find group ${currentGroupId} with name ${currentGroupName} for operation ${currentOperation}, on ${date.toLocaleDateString()} at ${date.toLocaleTimeString()}\n`,
         () => {}
     )

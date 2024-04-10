@@ -1,6 +1,6 @@
 import fs from 'fs';
 
-export default (set, fileName) => {
+export const getContactsStringFromSet = (set) => {
     const it = set.values()
     let done = false
     let vals = ''
@@ -10,5 +10,9 @@ export default (set, fileName) => {
         vals+=val.value+'\n'
         done = val.done
     }
-    fs.writeFileSync(`${fileName}.txt`, vals, () => {})
+    return vals;
+}
+export default (set, fileName) => {
+    const contacts = getContactsStringFromSet(set);
+    fs.writeFileSync(`${fileName}.txt`, contacts, () => {})
 }

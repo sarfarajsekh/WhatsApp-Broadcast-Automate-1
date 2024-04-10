@@ -1,5 +1,4 @@
 import waitForElementToExist from "./wait-for-element-to-exist.js";
-import addInLogString from "./add-in-log-string.js";
 import clearTextField from "./clear-text-field.js";
 import {logger} from '../index.js';
 

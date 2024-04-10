@@ -5,10 +5,11 @@ import getPhoneNumber from "./get-phone-number.js";
 import waitForElementToExist from "./wait-for-element-to-exist.js";
 import getElementByResourceId from "./get-element-by-resource-id.js";
 import scrollAndGetContacts from "./scroll-and-get-contacts.js";
-import exportSetIntoFile from "./export-set-into-file.js";
-import fs from 'fs';
+import { getContactsStringFromSet } from "./export-set-into-file.js";
+import { ResultLogger } from "./logger.js";
 
 export default async (keyword) => {
+    const logger = new ResultLogger({ groupName: keyword });
     const contacts = new Set()
     let lastContactsSize = -1
     const conditionCb = () => {
@@ -41,9 +42,8 @@ export default async (keyword) => {
         }
         try{
             const phoneNumber = await getPhoneNumber()
-            fs.appendFileSync(`${keyword}-live.txt`, phoneNumber+'\n')
+            logger.log(phoneNumber);
             contacts.add(phoneNumber)
-
         }catch(e) {}
         await navigateUp()
         await navigateUp()
@@ -53,5 +53,6 @@ export default async (keyword) => {
         await swipeDown(50, 95, 30)
     }
     await scrollAndGetContacts(conditionCb, operationCb, 'com.whatsapp:id/search_message_container_header', swipeCb)
-    exportSetIntoFile(contacts, keyword)
+    const contactsString = getContactsStringFromSet(contacts);
+    logger.logOverwrite(contactsString);
 }

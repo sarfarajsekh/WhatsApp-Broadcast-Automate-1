@@ -1,7 +1,7 @@
-import fs from 'fs';
-import { getContactNumber, scrollAndGetContacts, exportSetIntoFile, swipeDown } from "../utils/index.js";
+import { getContactNumber, scrollAndGetContacts, swipeDown, ResultLogger, getContactsStringFromSet, navigateUp } from "../utils/index.js";
 
 export default async () => {
+    const logger = new ResultLogger({groupName: 'total-contacts-numer'});
     const contacts = new Set()
     let lastContactsSize = -1
     const conditionCb = () => {
@@ -15,7 +15,7 @@ export default async () => {
         if (res) {
             if(res.number) {
                 contacts.add(res.number)
-                fs.appendFileSync('total-contacts-number-live.txt', res.number+'\n')
+                logger.log(res.number+'\n')
             }
             navUp = res.navUp
         }
@@ -28,5 +28,6 @@ export default async () => {
         await swipeDown(50, 95, 40)
     }
     await scrollAndGetContacts(conditionCb, operationCb, 'com.whatsapp:id/contact_row_container', swipeCb)
-    exportSetIntoFile(contacts, 'total-contacts-number')
+    const contactsString = getContactsStringFromSet(contacts);
+    logger.logOverwrite(contactsString);
 }
