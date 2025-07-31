@@ -4,12 +4,18 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "setup": "node setup.js",
+    "check-android": "powershell -ExecutionPolicy Bypass -File check-android.ps1",
+    "start-appium": "node start-appium.js",
+    "start": "node index.js",
+    "dev": "node start-appium.js & node index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "webdriverio": "^7.16.3"
+    "csv-parser": "^3.2.0",
+    "webdriverio": "^9.18.4"
   }
 }

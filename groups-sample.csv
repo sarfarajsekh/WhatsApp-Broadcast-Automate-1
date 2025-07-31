@@ -1,0 +1,17 @@
+group_id,group_name,contacts,operation,keyword
+001,My First Group,"8250472237,9932647806",create,
+002,Family Group,"8250472237,9932647806",create,
+003,Work Team,"8250472237,9932647806",create,
+004,Friends Circle,"8250472237,9932647806",create,
+005,Study Group,"8250472237,9932647806",create,
+006,Project Team,"8250472237,9932647806",create,
+007,Social Club,"8250472237,9932647806",create,
+008,Business Network,"8250472237,9932647806",create,
+009,Hobby Group,"8250472237,9932647806",create,
+010,Support Group,"8250472237,9932647806",create,
+011,Add to Existing,"8250472237,9932647806",add,
+012,Remove from Group,"8250472237",remove,
+013,Read Group Numbers,My First Group,,read-number,
+014,Read Group Names,My First Group,,read-name,
+015,Search Contacts,,,read-by-keyword,John
+016,Read All Contacts,,,read-contacts, 
