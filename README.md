@@ -23,7 +23,7 @@ A Node.js automation tool for WhatsApp Web using WebDriverIO and Appium to manag
 ### 1. Clone and Install
 
 ```bash
-git clone https://github.com/khobaib222/WhatsApp-Broadcast-Automate
+https://github.com/sarfarajsekh/WhatsApp-Broadcast-Automate
 cd WhatsApp-Broadcast-Automate
 npm install
 ```
