@@ -38,7 +38,7 @@ const waitForElementToExist = async (element, timeout = 5000) => {
 const openMoreOptions = async () => {
     console.log('🔍 Looking for More options button...')
     
-    // Try different selectors for the More options button
+    // Try different selectors for the More options button (WhatsApp Business)
     const selectors = [
         '~More options',
         '~More',
@@ -46,7 +46,12 @@ const openMoreOptions = async () => {
         '~Menu',
         '~More options menu',
         '~Three dots',
-        '~Settings'
+        '~Settings',
+        '~Business tools',
+        '~Business menu',
+        '~New group',
+        '~Create group',
+        '~Add group'
     ]
     
     for (const selector of selectors) {
@@ -76,7 +81,7 @@ const openMoreOptions = async () => {
         console.log('  ❌ Not found by text')
     }
     
-    // If still not found, try by resource ID
+    // If still not found, try by resource ID (WhatsApp Business)
     try {
         console.log('  Trying by resource ID: "menu"')
         const resourceSelector = 'new UiSelector().resourceId("com.whatsapp:id/menu")'
@@ -87,6 +92,19 @@ const openMoreOptions = async () => {
         return
     } catch (error) {
         console.log('  ❌ Not found by resource ID')
+    }
+    
+    // Try WhatsApp Business specific resource IDs
+    try {
+        console.log('  Trying WhatsApp Business resource ID: "business_tools"')
+        const businessSelector = 'new UiSelector().resourceId("com.whatsapp.w4b:id/business_tools")'
+        const element = await client.$(`android=${businessSelector}`)
+        await element.waitForExist({ timeout: 2000 })
+        await element.click()
+        console.log('✅ Found and clicked by WhatsApp Business resource ID: "business_tools"')
+        return
+    } catch (error) {
+        console.log('  ❌ Not found by WhatsApp Business resource ID')
     }
     
     throw new Error('Could not find More options button. Please make sure WhatsApp is open and you are on the main chat list screen.')
@@ -168,9 +186,11 @@ const clickOnSearch = async () => await clickOnButtonWithContentDesc('Search')
 const getTextField = async (isAutoComplete) => {
     console.log('🔍 Looking for search text field...')
     
-    // Try different approaches to find the search field
+    // Try different approaches to find the search field (WhatsApp Business)
     const selectors = [
         `new UiSelector().resourceId("com.whatsapp.w4b:id/search_src_text")`,
+        `new UiSelector().resourceId("com.whatsapp.w4b:id/search_input")`,
+        `new UiSelector().resourceId("com.whatsapp.w4b:id/search_edit_text")`,
         `new UiSelector().text("Search name or number…").className(android.widget.${isAutoComplete ? "AutoCompleteTextView" : "EditText"})`,
         `new UiSelector().text("Search…").className(android.widget.${isAutoComplete ? "AutoCompleteTextView" : "EditText"})`,
         `new UiSelector().text("Search").className(android.widget.${isAutoComplete ? "AutoCompleteTextView" : "EditText"})`,
@@ -1124,8 +1144,56 @@ const navigateBackToMainScreen = async () => {
     }
     
     try {
-        // Method 2: Try to find back button by text content
-        console.log('🔍 Method 2: Looking for back button by text content...')
+        // Method 1.5: Try to find back button by different accessibility IDs
+        console.log('🔍 Method 1.5: Looking for back button by alternative accessibility IDs...')
+        const backSelectors = ['~Back', '~Navigate back', '~Arrow back', '~Up']
+        for (const selector of backSelectors) {
+            try {
+                const backButton = await client.$(selector)
+                await backButton.waitForExist({ timeout: 2000 })
+                console.log(`✅ Found back button with selector: ${selector}`)
+                await backButton.click()
+                console.log('✅ Successfully clicked back button')
+                return
+            } catch (e) {
+                console.log(`  ❌ Not found: ${selector}`)
+            }
+        }
+    } catch (error) {
+        console.log('⚠️ Method 1.5 failed: No alternative back buttons found')
+    }
+    
+    try {
+        // Method 2: Try to find back button by resource ID (more reliable)
+        console.log('🔍 Method 2: Looking for back button by resource ID...')
+        const resourceSelectors = [
+            'android=new UiSelector().resourceId("com.whatsapp.w4b:id/back")',
+            'android=new UiSelector().resourceId("com.whatsapp.w4b:id/back_button")',
+            'android=new UiSelector().resourceId("com.whatsapp.w4b:id/navigate_up")',
+            'android=new UiSelector().resourceId("com.whatsapp.w4b:id/arrow_back")',
+            'android=new UiSelector().resourceId("android:id/up")'
+        ]
+        
+        for (const selector of resourceSelectors) {
+            try {
+                const backButton = await client.$(selector)
+                await backButton.waitForExist({ timeout: 2000 })
+                console.log(`✅ Found back button with resource ID: ${selector}`)
+                await backButton.click()
+                console.log('✅ Successfully clicked back button')
+                return
+            } catch (e) {
+                console.log(`  ❌ Not found: ${selector}`)
+            }
+        }
+    } catch (error) {
+        console.log('⚠️ Method 2 failed: Back button not found by resource ID')
+        console.log(`   Error: ${error.message}`)
+    }
+    
+    try {
+        // Method 2.5: Try to find back button by text content
+        console.log('🔍 Method 2.5: Looking for back button by text content...')
         const backButton = await client.$('android=new UiSelector().text("Back")')
         await backButton.waitForExist({ timeout: 3000 })
         console.log('✅ Found back button by text content')
@@ -1133,7 +1201,7 @@ const navigateBackToMainScreen = async () => {
         console.log('✅ Successfully clicked back button')
         return
     } catch (error) {
-        console.log('⚠️ Method 2 failed: Back button not found by text content')
+        console.log('⚠️ Method 2.5 failed: Back button not found by text content')
         console.log(`   Error: ${error.message}`)
     }
     
@@ -1199,11 +1267,20 @@ const navigateBackToMainScreen = async () => {
         console.log(`   Error: ${error.message}`)
     }
     
-    // Method 5: Try to use Android back button as last resort
+    // Method 5: Try to use Android back button multiple times
     try {
-        console.log('🔍 Method 5: Using Android back button as last resort...')
+        console.log('🔍 Method 5: Using Android back button multiple times...')
         await client.back()
-        console.log('✅ Successfully used Android back button')
+        console.log('✅ Successfully used Android back button (1st time)')
+        await client.pause(1000)
+        
+        // Try a second time if needed
+        try {
+            await client.back()
+            console.log('✅ Successfully used Android back button (2nd time)')
+        } catch (secondBackError) {
+            console.log('✅ First back button press was sufficient')
+        }
         return
     } catch (error) {
         console.log('⚠️ Method 5 failed: Android back button not available')
@@ -1271,23 +1348,23 @@ const createNewGroup = async (contacts, name) => {
     console.log(`👥 Adding ${contacts.length} contact(s): ${contacts.join(', ')}`)
     
     try {
-        // Step 0: Check if group already exists
-        console.log('\n🔍 Step 0: Checking if group already exists...')
-        const groupExists = await checkIfGroupExists(name)
-        
-        if (groupExists) {
-            console.log(`⏭️ Skipping group creation - "${name}" already exists`)
-            console.log('📊 Group creation process skipped')
-            return
-        }
+        // Skip group existence check and go directly to creation
+        console.log('\n🆕 Proceeding directly to group creation...')
         
         console.log('\n📋 Step 1: Opening New Group View...')
-        await openNewGroupView()
+        console.log('🔍 Step 1a: Clicking three dots menu...')
+        await openMoreOptions()
+        console.log('✅ Three dots menu clicked successfully')
+        
+        console.log('🔍 Step 1b: Selecting "New group" from menu...')
+        await clickOnMoreOptionsButtonWithText('New group')
+        console.log('✅ "New group" selected successfully')
+        
         console.log('✅ New Group View opened successfully')
         
-        console.log('\n🔍 Step 2: Clicking Search button...')
+        console.log('\n🔍 Step 2: Clicking search icon...')
         await clickOnSearch()
-        console.log('✅ Search button clicked successfully')
+        console.log('✅ Search icon clicked successfully')
         
         console.log('\n👤 Step 3: Adding contacts...')
         for(let i = 0; i < contacts.length; i++) {

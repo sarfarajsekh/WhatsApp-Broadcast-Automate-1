@@ -18,9 +18,9 @@ module.exports = {
         path: '/',  // Updated for newer Appium versions
     },
     
-    // WhatsApp app settings - We'll launch WhatsApp manually
+    // WhatsApp Business app settings - We'll launch WhatsApp Business manually
     whatsapp: {
-        // No app-specific settings - user will open WhatsApp manually
+        // No app-specific settings - user will open WhatsApp Business manually
     },
     
     // Additional capabilities for better compatibility
@@ -41,7 +41,7 @@ module.exports = {
         step3: 'Connect device via USB and run: adb devices',
         step4: 'Install Appium Server globally: npm install -g appium',
         step5: 'Start Appium Server: appium',
-        step6: 'Install WhatsApp on your device and log in',
+        step6: 'Install WhatsApp Business on your device and log in',
         step7: 'Update platformVersion in this file to match your Android version',
         step8: 'Run the automation: node index.js'
     }
